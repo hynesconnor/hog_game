@@ -1,14 +1,11 @@
-"""CS 61A Presents The Game of Hog."""
+"""Simulates a game of hoh against a computer"""
 
 from dice import six_sided, four_sided, make_test_dice
-from ucb import main, trace, interact
+from ucb import main, trace, interact 
 
-GOAL_SCORE = 100  # The goal of Hog is to score 100 points.
+GOAL_SCORE = 100  # Max score to win
 
-######################
-# Phase 1: Simulator #
-######################
-
+# Simulation
 
 def roll_dice(num_rolls, dice=six_sided):
     """Simulate rolling the DICE exactly NUM_ROLLS > 0 times. Return the sum of
@@ -20,7 +17,7 @@ def roll_dice(num_rolls, dice=six_sided):
     # These assert statements ensure that num_rolls is a positive integer.
     assert type(num_rolls) == int, 'num_rolls must be an integer.'
     assert num_rolls > 0, 'Must roll at least once.'
-    # BEGIN PROBLEM 1
+
     total, one_check = 0, False
     while num_rolls > 0:
         roll = dice()
@@ -31,16 +28,15 @@ def roll_dice(num_rolls, dice=six_sided):
         return 1
     else:
         return total
-    # END PROBLEM 1
-
 
 def free_bacon(score):
     """Return the points scored from rolling 0 dice (Free Bacon).
 
     score:  The opponent's current score.
     """
+    # error check
     assert score < 100, 'The game should be over.'
-    # BEGIN PROBLEM 2
+    
     score = pow(score, 3)
     diff, sign = 0, 1
     while score > 0:
@@ -56,9 +52,6 @@ def free_bacon(score):
             sign += 1
     return abs(diff) + 1
 
-    # END PROBLEM 2
-
-
 def take_turn(num_rolls, opponent_score, dice=six_sided):
     """Simulate a turn rolling NUM_ROLLS dice, which may be 0 (Free Bacon).
     Return the points scored for the turn by the current player.
@@ -67,24 +60,21 @@ def take_turn(num_rolls, opponent_score, dice=six_sided):
     opponent_score:  The total score of the opponent.
     dice:            A function that simulates a single dice roll outcome.
     """
-    # Leave these assert statements here; they help check for errors.
+    # error checking
     assert type(num_rolls) == int, 'num_rolls must be an integer.'
     assert num_rolls >= 0, 'Cannot roll a negative number of dice in take_turn.'
     assert num_rolls <= 10, 'Cannot roll more than 10 dice.'
     assert opponent_score < 100, 'The game should be over.'
-    # BEGIN PROBLEM 3
+
     if num_rolls == 0:
         return free_bacon(opponent_score)
     else:
         return roll_dice(num_rolls, dice)
-    # END PROBLEM 3
-
 
 def is_swap(player_score, opponent_score):
     """
     Return whether the two scores should be swapped
     """
-    # BEGIN PROBLEM 4
     excitement = pow(3, player_score + opponent_score)
     last = excitement % 10
     while excitement > 0:
@@ -94,8 +84,6 @@ def is_swap(player_score, opponent_score):
         return True
     else:
         return False
-    # END PROBLEM 4
-
 
 def other(who):
     """Return the other player, for a player WHO numbered 0 or 1.
@@ -107,11 +95,9 @@ def other(who):
     """
     return 1 - who
 
-
 def silence(score0, score1):
     """Announce nothing (see Phase 2)."""
     return silence
-
 
 def feral_check(roll, score, feral_hogs):
     """If feral_hogs is enabled, returns bonus points"""
@@ -140,11 +126,9 @@ def play(strategy0, strategy1, score0=0, score1=0, dice=six_sided,
     """
     who = 0  # Who is about to take a turn, 0 (first) or 1 (second)
     points0, points1 = 0, 0
-    # BEGIN PROBLEM 5
 
     # simulate turns for each player until goal is met
     while score0 < goal and score1 < goal:
-
         if who == 0:
             strat0 = strategy0(score0, score1) # gets number of rolls
             score0 += feral_check(strat0, points0, feral_hogs) # determines points for if feral rule enabled
@@ -156,22 +140,16 @@ def play(strategy0, strategy1, score0=0, score1=0, dice=six_sided,
             score1 += feral_check(strat1, points1, feral_hogs)
             points1 = take_turn(strat1, score0, dice)
             score1 = score1 + points1
-            
+
         if is_swap(score0, score1):
             score0, score1 = score1, score0
 
         who = other(who) # swap player
-        # END PROBLEM 5
-    # (note that the indentation for the problem 6 prompt (***YOUR CODE HERE***) might be misleading)
-    # BEGIN PROBLEM 6
+
+        say = say(score0, score1) # say on first turn, then sets return value to say for remainder of turns
     return score0, score1
-    # END PROBLEM 6
 
-
-#######################
-# Phase 2: Commentary #
-#######################
-
+# Commentary
 
 def say_scores(score0, score1):
     """A commentary function that announces the score for each player."""
@@ -223,7 +201,6 @@ def both(f, g):
         return both(f(score0, score1), g(score0, score1))
     return say
 
-
 def announce_highest(who, prev_high=0, prev_score=0):
     """Return a commentary function that announces when WHO's score
     increases by more than ever before in the game.
@@ -248,15 +225,28 @@ def announce_highest(who, prev_high=0, prev_score=0):
     55 point(s)! That's the biggest gain yet for Player 1
     """
     assert who == 0 or who == 1, 'The who argument should indicate a player.'
-    # BEGIN PROBLEM 7
-    "*** YOUR CODE HERE ***"
-    # END PROBLEM 7
 
+    def say(score0, score1):
+        if who == 0:
+            diff = score0 - prev_score
+            old_score = score0
+            high = prev_high
+            if diff > prev_high:
+                high = diff
+                print(diff, "point(s)! That's the biggest gain yet for Player 0")
+            return announce_highest(who, high, old_score)
 
-#######################
-# Phase 3: Strategies #
-#######################
+        if who == 1:
+            diff = score1 - prev_score
+            old_score = score1
+            high = prev_high
+            if diff > prev_high:
+                high = diff
+                print(diff, "point(s)! That's the biggest gain yet for Player 1")
+            return announce_highest(who, high, old_score)
+    return say
 
+# Strategies
 
 def always_roll(n):
     """Return a strategy that always rolls N dice.
@@ -275,7 +265,6 @@ def always_roll(n):
         return n
     return strategy
 
-
 def make_averaged(g, num_samples=1000):
     """Return a function that returns the average value of G when called.
 
@@ -288,9 +277,13 @@ def make_averaged(g, num_samples=1000):
     3.0
     """
     # BEGIN PROBLEM 8
-    "*** YOUR CODE HERE ***"
-    # END PROBLEM 8
-
+    def average(*args):
+        sum, i = 0, 0
+        while i < num_samples:
+            sum = g(*args) + sum
+            i += 1
+        return sum / num_samples
+    return average
 
 def max_scoring_num_rolls(dice=six_sided, num_samples=1000):
     """Return the number of dice (1 to 10) that gives the highest average turn
@@ -301,10 +294,15 @@ def max_scoring_num_rolls(dice=six_sided, num_samples=1000):
     >>> max_scoring_num_rolls(dice)
     1
     """
-    # BEGIN PROBLEM 9
-    "*** YOUR CODE HERE ***"
-    # END PROBLEM 9
-
+    high_avg, i = 0, 1
+    while i <= 10:
+        cur_avg = make_averaged(roll_dice, num_samples) # 
+        max_i = cur_avg(i, dice)
+        if high_avg < max_i:
+            high_avg = max_i
+            high_roll = i
+        i += 1
+    return high_roll
 
 def winner(strategy0, strategy1):
     """Return 0 if strategy0 wins against strategy1, and 1 otherwise."""
@@ -313,7 +311,6 @@ def winner(strategy0, strategy1):
         return 0
     else:
         return 1
-
 
 def average_win_rate(strategy, baseline=always_roll(6)):
     """Return the average win rate of STRATEGY against BASELINE. Averages the
@@ -324,10 +321,9 @@ def average_win_rate(strategy, baseline=always_roll(6)):
 
     return (win_rate_as_player_0 + win_rate_as_player_1) / 2
 
-
-def run_experiments():
-    """Run a series of strategy experiments and report results."""
-    if True:  # Change to False when done finding max_scoring_num_rolls
+def run_experiments(): 
+    """Testing win rates of different strategies"""
+    if False:  # Change to False when done finding max_scoring_num_rolls
         six_sided_max = max_scoring_num_rolls(six_sided)
         print('Max scoring num rolls for six-sided dice:', six_sided_max)
 
@@ -340,49 +336,42 @@ def run_experiments():
     if False:  # Change to True to test swap_strategy
         print('swap_strategy win rate:', average_win_rate(swap_strategy))
 
-    if False:  # Change to True to test final_strategy
+    if True:  # Change to True to test final_strategy
         print('final_strategy win rate:', average_win_rate(final_strategy))
 
     "*** You may add additional experiments as you wish ***"
-
-
 
 def bacon_strategy(score, opponent_score, margin=8, num_rolls=6):
     """This strategy rolls 0 dice if that gives at least MARGIN points, and
     rolls NUM_ROLLS otherwise.
     """
-    # BEGIN PROBLEM 10
-    return 6  # Replace this statement
-    # END PROBLEM 10
-
+    if free_bacon(opponent_score) >= margin:
+        return 0
+    else:
+        return num_rolls 
 
 def swap_strategy(score, opponent_score, margin=8, num_rolls=6):
     """This strategy rolls 0 dice when it triggers a beneficial swap. It also
     rolls 0 dice if it gives at least MARGIN points and does not trigger a
     non-beneficial swap. Otherwise, it rolls NUM_ROLLS.
     """
-    # BEGIN PROBLEM 11
-    return 6  # Replace this statement
+    score += free_bacon(opponent_score)
+    if is_swap(score, opponent_score) and score < opponent_score:
+        return 0
+    elif free_bacon(opponent_score) >= margin and is_swap(score, opponent_score) == False:
+        return 0
+    else:
+        return num_rolls
     # END PROBLEM 11
 
-
 def final_strategy(score, opponent_score):
-    """Write a brief description of your final strategy.
-
-    *** YOUR DESCRIPTION HERE ***
+    """Not super interesting. Short on time, so just rolls 4 dice each time.
     """
-    # BEGIN PROBLEM 12
-    return 6  # Replace this statement
-    # END PROBLEM 12
+    return 4
 
 ##########################
 # Command Line Interface #
 ##########################
-
-# NOTE: Functions in this section do not need to be changed. They use features
-# of Python not yet covered in the course.
-
-
 @main
 def run(*args):
     """Read in the command-line argument and calls corresponding functions.
